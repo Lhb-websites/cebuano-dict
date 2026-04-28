@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bisaya App — Learn Cebuano</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['DM Sans', 'sans-serif'],
+          },
+          colors: {
+            ocean: {
+              50:  '#eef6ff',
+              100: '#d9ecff',
+              200: '#bcdeff',
+              300: '#8ecbff',
+              400: '#58adff',
+              500: '#3090ff',
+              600: '#1a6ef5',
+              700: '#1457e1',
+              800: '#1746b5',
+              900: '#193d8f',
+              950: '#142660',
+            },
+            sand: {
+              50:  '#fdfaf3',
+              100: '#f9f1dc',
+              200: '#f2e0b3',
+              300: '#e9c97e',
+              400: '#dfae4e',
+              500: '#d49630',
+              600: '#ba7722',
+              700: '#9a591e',
+              800: '#7d461f',
+              900: '#683a1d',
+              950: '#3c1e0b',
+            },
+            coral: {
+              400: '#fb7060',
+              500: '#f95543',
+              600: '#e63a28',
+            }
+          },
+          keyframes: {
+            fadeUp: { '0%': { opacity:'0', transform:'translateY(12px)' }, '100%': { opacity:'1', transform:'translateY(0)' } },
+            pop: { '0%,100%': { transform:'scale(1)' }, '50%': { transform:'scale(1.08)' } },
+            shake: { '0%,100%': { transform:'translateX(0)' }, '20%,60%': { transform:'translateX(-5px)' }, '40%,80%': { transform:'translateX(5px)' } },
+            slideIn: { '0%': { opacity:'0', transform:'translateX(-8px)' }, '100%': { opacity:'1', transform:'translateX(0)' } },
+          },
+          animation: {
+            fadeUp: 'fadeUp 0.35s ease both',
+            pop: 'pop 0.25s ease',
+            shake: 'shake 0.4s ease',
+            slideIn: 'slideIn 0.25s ease both',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .font-display { font-family: 'Syne', sans-serif; }
+    .tab-active { background: linear-gradient(135deg, #1a6ef5, #3090ff); color: white; box-shadow: 0 4px 16px rgba(26,110,245,0.35); }
+    .tab-inactive { background: transparent; color: #6b7280; }
+    .choice-btn { transition: all 0.15s ease; }
+    .choice-btn:hover:not(.answered) { border-color: #3090ff; background: #eef6ff; color: #1a6ef5; transform: translateY(-1px); }
+    .correct-ans { background: #f0fdf4 !important; border-color: #22c55e !important; color: #15803d !important; }
+    .wrong-ans { background: #fef2f2 !important; border-color: #ef4444 !important; color: #dc2626 !important; animation: shake 0.4s ease; }
+    .entry-row { animation: slideIn 0.2s ease both; }
+    .entry-row:hover { transform: translateX(3px); }
+    .mode-pill { transition: all 0.2s ease; }
+    .flash-card-inner { transition: transform 0.5s ease; transform-style: preserve-3d; }
+    .flash-card-inner.flipped { transform: rotateY(180deg); }
+    .flash-face { backface-visibility: hidden; }
+    .flash-back { backface-visibility: hidden; transform: rotateY(180deg); }
+    ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 99px; }
+    input:focus { outline: none; }
+    .streak-fire { animation: pop 0.3s ease; }
+    .bg-dots { background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px); background-size: 20px 20px; }
+  </style>
+</head>
+<body class="min-h-screen bg-gray-50 bg-dots">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+    <div class="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-2xl">🇵🇭</span>
+        <div>
+          <h1 class="font-display text-xl font-800 text-gray-900 leading-none">Bisaya</h1>
+          <p class="text-xs text-ocean-500 font-body font-medium">Learn Cebuano</p>
+        </div>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="flex bg-gray-100 rounded-full p-1 gap-1">
+        <button id="dict-tab" onclick="setMode('dict')" class="mode-pill tab-active text-sm font-display font-600 px-5 py-2 rounded-full">
+          📖 Dictionary
+        </button>
+        <button id="play-tab" onclick="setMode('play')" class="mode-pill tab-inactive text-sm font-display font-600 px-5 py-2 rounded-full">
+          🎮 Play
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-2xl mx-auto px-4 py-6">
+
+    <!-- ====== DICTIONARY VIEW ====== -->
+    <div id="dict-view">
+      <!-- Search -->
+      <div class="relative mb-4">
+        <svg class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/></svg>
+        <input id="search" type="text" placeholder="Search Cebuano or English…" oninput="renderDict()"
+          class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl text-sm text-gray-800 placeholder-gray-400 shadow-sm focus:border-ocean-400 focus:ring-2 focus:ring-ocean-100 transition">
+      </div>
+
+      <!-- Category filters -->
+      <div class="flex gap-2 flex-wrap mb-5">
+        <button class="cat-btn active-cat font-display text-xs font-600 px-4 py-1.5 rounded-full border bg-ocean-600 text-white border-ocean-600 transition" onclick="setCat('all',this)">All</button>
+        <button class="cat-btn font-display text-xs font-600 px-4 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-ocean-300 hover:text-ocean-600 transition" onclick="setCat('greetings',this)">👋 Greetings</button>
+        <button class="cat-btn font-display text-xs font-600 px-4 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-ocean-300 hover:text-ocean-600 transition" onclick="setCat('common',this)">🔤 Common</button>
+        <button class="cat-btn font-display text-xs font-600 px-4 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-ocean-300 hover:text-ocean-600 transition" onclick="setCat('phrases',this)">💬 Phrases</button>
+        <button class="cat-btn font-display text-xs font-600 px-4 py-1.5 rounded-full border border-gray-200 text-gray-600 hover:border-ocean-300 hover:text-ocean-600 transition" onclick="setCat('food',this)">🍖 Food</button>
+      </div>
+
+      <!-- Entries -->
+      <div id="dict-list" class="space-y-2"></div>
+    </div>
+
+    <!-- ====== PLAY VIEW ====== -->
+    <div id="play-view" class="hidden">
+      <!-- Game sub-tabs -->
+      <div class="flex gap-3 mb-5">
+        <button id="quiz-tab" onclick="setGame('quiz',this)" class="game-tab flex-1 py-3 rounded-2xl font-display font-700 text-sm bg-ocean-600 text-white shadow-lg shadow-ocean-200 transition">
+          🧠 Quiz
+        </button>
+        <button id="flash-tab" onclick="setGame('flash',this)" class="game-tab flex-1 py-3 rounded-2xl font-display font-700 text-sm bg-white text-gray-500 border border-gray-200 transition">
+          🃏 Flashcards
+        </button>
+      </div>
+
+      <!-- QUIZ PANEL -->
+      <div id="quiz-panel">
+        <!-- Scores -->
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm">
+            <div id="sc-correct" class="font-display text-2xl font-800 text-ocean-600">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">correct</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm">
+            <div id="sc-streak" class="font-display text-2xl font-800 text-sand-500">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">streak 🔥</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm">
+            <div id="sc-total" class="font-display text-2xl font-800 text-gray-700">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">total</div>
+          </div>
+        </div>
+
+        <!-- Question card -->
+        <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-4">
+          <p id="quiz-sub" class="text-xs text-ocean-400 font-display font-600 uppercase tracking-widest text-center mb-3"></p>
+          <p id="quiz-q" class="font-display text-3xl font-800 text-gray-900 text-center mb-6 leading-tight"></p>
+          <div id="quiz-choices" class="grid grid-cols-2 gap-3"></div>
+          <div id="quiz-fb" class="text-center mt-4 text-sm font-display font-600 min-h-[20px]"></div>
+        </div>
+
+        <button id="next-btn" onclick="nextQuiz()" class="hidden w-full py-3.5 bg-ocean-600 hover:bg-ocean-700 text-white font-display font-700 rounded-2xl transition shadow-lg shadow-ocean-200 text-sm">
+          Next question →
+        </button>
+      </div>
+
+      <!-- FLASH PANEL -->
+      <div id="flash-panel" class="hidden">
+        <!-- Scores -->
+        <div class="grid grid-cols-3 gap-3 mb-5">
+          <div class="bg-white rounded-2xl p-3 text-center border border-green-100 shadow-sm">
+            <div id="fl-knew" class="font-display text-2xl font-800 text-green-600">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">knew it ✓</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 text-center border border-red-100 shadow-sm">
+            <div id="fl-missed" class="font-display text-2xl font-800 text-red-500">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">missed ✗</div>
+          </div>
+          <div class="bg-white rounded-2xl p-3 text-center border border-gray-100 shadow-sm">
+            <div id="fl-left" class="font-display text-2xl font-800 text-gray-700">0</div>
+            <div class="text-xs text-gray-400 font-body mt-0.5">remaining</div>
+          </div>
+        </div>
+
+        <!-- Flip card -->
+        <div class="perspective-1000 mb-4" style="perspective:1200px">
+          <div id="flash-card-inner" class="flash-card-inner relative w-full" style="height:220px">
+            <!-- Front -->
+            <div class="flash-face absolute inset-0 bg-gradient-to-br from-ocean-600 to-ocean-800 rounded-3xl flex flex-col items-center justify-center cursor-pointer p-6 shadow-xl shadow-ocean-200/60" onclick="revealFlash()">
+              <p id="fl-word" class="font-display text-4xl font-800 text-white text-center leading-tight"></p>
+              <p id="fl-dir" class="text-ocean-200 text-xs font-body mt-3 uppercase tracking-widest"></p>
+              <div class="absolute bottom-5 flex items-center gap-1.5 text-ocean-300 text-xs">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                tap to flip
+              </div>
+            </div>
+            <!-- Back -->
+            <div class="flash-back absolute inset-0 bg-white border-2 border-ocean-200 rounded-3xl flex flex-col items-center justify-center p-6">
+              <p class="text-xs text-ocean-400 font-display font-600 uppercase tracking-widest mb-3">Answer</p>
+              <p id="fl-answer" class="font-display text-3xl font-800 text-gray-900 text-center leading-tight"></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Flash actions -->
+        <div id="flash-actions" class="hidden grid grid-cols-2 gap-3">
+          <button onclick="flashScore(false)" class="py-3.5 rounded-2xl border-2 border-red-200 text-red-500 font-display font-700 text-sm hover:bg-red-50 transition">
+            ✗ Missed it
+          </button>
+          <button onclick="flashScore(true)" class="py-3.5 rounded-2xl border-2 border-green-200 text-green-600 font-display font-700 text-sm hover:bg-green-50 transition">
+            ✓ Knew it!
+          </button>
+        </div>
+        <div id="flash-hint" class="text-center text-xs text-gray-400 mt-3">Flip the card first, then mark your answer</div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+  const dict = [
+    {ceb:"Maayong buntag",eng:"Good morning",cat:"greetings"},
+    {ceb:"Maayong adlaw",eng:"Good day",cat:"greetings"},
+    {ceb:"Maayong hapon",eng:"Good afternoon",cat:"greetings"},
+    {ceb:"Maayong gabii",eng:"Good evening / Good night",cat:"greetings"},
+    {ceb:"Kumusta ka?",eng:"How are you?",cat:"greetings"},
+    {ceb:"Maayo ra ko",eng:"I'm fine",cat:"greetings"},
+    {ceb:"Salamat",eng:"Thank you",cat:"greetings"},
+    {ceb:"Salamat kaayo",eng:"Thank you very much",cat:"greetings"},
+    {ceb:"Walay sapayan",eng:"You're welcome",cat:"greetings"},
+    {ceb:"Amping",eng:"Take care / Goodbye",cat:"greetings"},
+    {ceb:"Ako",eng:"I / Me",cat:"common"},
+    {ceb:"Ikaw",eng:"You (singular)",cat:"common"},
+    {ceb:"Siya",eng:"He / She",cat:"common"},
+    {ceb:"Kami / Kita",eng:"We",cat:"common"},
+    {ceb:"Sila",eng:"They",cat:"common"},
+    {ceb:"Oo",eng:"Yes",cat:"common"},
+    {ceb:"Dili",eng:"No",cat:"common"},
+    {ceb:"Unsa",eng:"What",cat:"common"},
+    {ceb:"Kinsa",eng:"Who",cat:"common"},
+    {ceb:"Asa",eng:"Where",cat:"common"},
+    {ceb:"Kanus-a",eng:"When",cat:"common"},
+    {ceb:"Ngano",eng:"Why",cat:"common"},
+    {ceb:"Maayo",eng:"Good",cat:"common"},
+    {ceb:"Nindot",eng:"Beautiful / Nice",cat:"common"},
+    {ceb:"Lami",eng:"Delicious",cat:"common"},
+    {ceb:"Balay",eng:"House",cat:"common"},
+    {ceb:"Tawo",eng:"Person",cat:"common"},
+    {ceb:"Anak",eng:"Child",cat:"common"},
+    {ceb:"Gugma",eng:"Love",cat:"common"},
+    {ceb:"Tubig",eng:"Water",cat:"common"},
+    {ceb:"Unsa imong ngalan?",eng:"What is your name?",cat:"phrases"},
+    {ceb:"Ang akong ngalan si ...",eng:"My name is ...",cat:"phrases"},
+    {ceb:"Taga Cebu ko",eng:"I'm from Cebu",cat:"phrases"},
+    {ceb:"Gigutom na ko",eng:"I'm hungry",cat:"phrases"},
+    {ceb:"Tagpila ni?",eng:"How much is this?",cat:"phrases"},
+    {ceb:"Palihug",eng:"Please",cat:"phrases"},
+    {ceb:"Pasayloa ko",eng:"I'm sorry / Excuse me",cat:"phrases"},
+    {ceb:"Gihigugma ko ikaw",eng:"I love you",cat:"phrases"},
+    {ceb:"Mangaon ta!",eng:"Let's eat!",cat:"phrases"},
+    {ceb:"Asa ang CR / banyo?",eng:"Where is the restroom?",cat:"phrases"},
+    {ceb:"Lechon",eng:"Roast pig (famous Cebu dish)",cat:"food"},
+    {ceb:"Kinilaw",eng:"Cebu-style ceviche",cat:"food"},
+    {ceb:"Lami kaayo!",eng:"Very delicious!",cat:"food"},
+    {ceb:"Busog na ko",eng:"I'm full",cat:"food"},
+    {ceb:"Puso",eng:"Rice in banana leaf / Heart",cat:"food"},
+    {ceb:"Tinola",eng:"Ginger chicken soup",cat:"food"},
+  ];
+
+  const catColors = { greetings:'bg-sky-50 text-sky-600 border-sky-100', common:'bg-violet-50 text-violet-600 border-violet-100', phrases:'bg-amber-50 text-amber-600 border-amber-100', food:'bg-rose-50 text-rose-600 border-rose-100' };
+  let activeCat='all';
+
+  function setCat(cat, btn) {
+    activeCat = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => {
+      b.classList.remove('active-cat','bg-ocean-600','text-white','border-ocean-600');
+      b.classList.add('border-gray-200','text-gray-600');
+    });
+    btn.classList.add('active-cat','bg-ocean-600','text-white','border-ocean-600');
+    btn.classList.remove('border-gray-200','text-gray-600');
+    renderDict();
+  }
+
+  function renderDict() {
+    const q = document.getElementById('search').value.toLowerCase();
+    let items = dict;
+    if (activeCat !== 'all') items = items.filter(d => d.cat === activeCat);
+    if (q) items = items.filter(d => d.ceb.toLowerCase().includes(q) || d.eng.toLowerCase().includes(q));
+    const el = document.getElementById('dict-list');
+    if (!items.length) {
+      el.innerHTML = '<div class="text-center text-gray-400 py-12 font-body">No entries found 🔍</div>'; return;
+    }
+    el.innerHTML = items.map((d, i) => {
+      const col = catColors[d.cat] || 'bg-gray-50 text-gray-500 border-gray-100';
+      return `<div class="entry-row bg-white rounded-2xl border border-gray-100 shadow-sm px-4 py-3.5 flex justify-between items-center hover:shadow-md transition-all duration-200" style="animation-delay:${i*0.03}s">
+        <div>
+          <div class="font-display font-700 text-ocean-700 text-base">${d.ceb}</div>
+          <div class="text-gray-500 font-body text-sm mt-0.5">${d.eng}</div>
+        </div>
+        <span class="text-xs font-display font-600 px-2.5 py-1 rounded-full border ${col}">${d.cat}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function setMode(m) {
+    const isDict = m === 'dict';
+    document.getElementById('dict-view').classList.toggle('hidden', !isDict);
+    document.getElementById('play-view').classList.toggle('hidden', isDict);
+    document.getElementById('dict-tab').className = 'mode-pill text-sm font-display font-600 px-5 py-2 rounded-full transition ' + (isDict ? 'tab-active' : 'tab-inactive');
+    document.getElementById('play-tab').className = 'mode-pill text-sm font-display font-600 px-5 py-2 rounded-full transition ' + (!isDict ? 'tab-active' : 'tab-inactive');
+    if (!isDict) initQuiz();
+  }
+
+  // QUIZ
+  let quizCorrect=0, quizStreak=0, quizTotal=0, quizAnswered=false;
+
+  function shuffle(a) { return [...a].sort(()=>Math.random()-0.5); }
+
+  function initQuiz() { nextQuiz(); }
+
+  function nextQuiz() {
+    quizAnswered = false;
+    document.getElementById('quiz-fb').textContent = '';
+    document.getElementById('quiz-fb').className = 'text-center mt-4 text-sm font-display font-600 min-h-[20px]';
+    document.getElementById('next-btn').classList.add('hidden');
+    const pool = shuffle(dict);
+    const current = pool[0];
+    const dir = Math.random() > 0.5;
+    const question = dir ? current.ceb : current.eng;
+    const answer = dir ? current.eng : current.ceb;
+    document.getElementById('quiz-q').textContent = question;
+    document.getElementById('quiz-sub').textContent = dir ? 'What does this mean in English?' : 'How do you say this in Cebuano?';
+    const wrongs = shuffle(pool.slice(1)).slice(0,3).map(d => dir ? d.eng : d.ceb);
+    const choices = shuffle([answer, ...wrongs]);
+    document.getElementById('quiz-choices').innerHTML = choices.map(c =>
+      `<button class="choice-btn answered-no border border-gray-200 bg-gray-50 hover:bg-ocean-50 text-gray-700 font-display font-600 text-sm py-3 px-3 rounded-2xl text-center transition" onclick="checkAnswer(this,'${c.replace(/'/g,"\\'")}','${answer.replace(/'/g,"\\'")}')">${c}</button>`
+    ).join('');
+  }
+
+  function checkAnswer(btn, chosen, correct) {
+    if (quizAnswered) return;
+    quizAnswered = true; quizTotal++;
+    document.getElementById('sc-total').textContent = quizTotal;
+    document.querySelectorAll('.choice-btn').forEach(b => b.classList.add('answered'));
+    if (chosen === correct) {
+      btn.classList.add('correct-ans');
+      quizCorrect++; quizStreak++;
+      const fb = document.getElementById('quiz-fb');
+      fb.textContent = ['Tama! ✓', 'Husto! ✓', 'Sakto! ✓'][Math.floor(Math.random()*3)];
+      fb.classList.add('text-green-600');
+    } else {
+      btn.classList.add('wrong-ans');
+      quizStreak = 0;
+      const fb = document.getElementById('quiz-fb');
+      fb.textContent = 'Mali ✗ — Answer: ' + correct;
+      fb.classList.add('text-red-500');
+      document.querySelectorAll('.choice-btn').forEach(b => { if(b.textContent.trim() === correct) b.classList.add('correct-ans'); });
+    }
+    document.getElementById('sc-correct').textContent = quizCorrect;
+    const s = document.getElementById('sc-streak');
+    s.textContent = quizStreak;
+    if(quizStreak>0) s.classList.add('streak-fire');
+    setTimeout(()=>s.classList.remove('streak-fire'),300);
+    document.getElementById('next-btn').classList.remove('hidden');
+  }
+
+  // FLASHCARDS
+  let flashDeck=[], flashIdx=0, flKnew=0, flMissed=0, flashRevealed=false, flashDir=true;
+
+  function setGame(g, btn) {
+    document.querySelectorAll('.game-tab').forEach(b => {
+      b.className = 'game-tab flex-1 py-3 rounded-2xl font-display font-700 text-sm bg-white text-gray-500 border border-gray-200 transition';
+    });
+    btn.className = 'game-tab flex-1 py-3 rounded-2xl font-display font-700 text-sm bg-ocean-600 text-white shadow-lg shadow-ocean-200 transition';
+    document.getElementById('quiz-panel').classList.toggle('hidden', g!=='quiz');
+    document.getElementById('flash-panel').classList.toggle('hidden', g!=='flash');
+    if(g==='flash') initFlash();
+    if(g==='quiz') initQuiz();
+  }
+
+  function initFlash() {
+    flashDeck = shuffle(dict); flashIdx=0; flKnew=0; flMissed=0;
+    updateFlashScores(); showFlashCard();
+  }
+
+  function showFlashCard() {
+    if (flashIdx >= flashDeck.length) {
+      document.getElementById('fl-word').textContent = 'All done!';
+      document.getElementById('fl-dir').textContent = `${flKnew} knew · ${flMissed} missed`;
+      document.getElementById('flash-actions').classList.add('hidden');
+      document.getElementById('flash-hint').textContent = '';
+      return;
+    }
+    flashRevealed = false;
+    flashDir = Math.random() > 0.5;
+    const card = flashDeck[flashIdx];
+    document.getElementById('fl-word').textContent = flashDir ? card.ceb : card.eng;
+    document.getElementById('fl-dir').textContent = flashDir ? 'Cebuano → English' : 'English → Cebuano';
+    document.getElementById('fl-answer').textContent = flashDir ? card.eng : card.ceb;
+    document.getElementById('flash-card-inner').classList.remove('flipped');
+    document.getElementById('flash-actions').classList.add('hidden');
+    document.getElementById('flash-hint').classList.remove('hidden');
+    updateFlashScores();
+  }
+
+  function revealFlash() {
+    if (flashRevealed) return;
+    flashRevealed = true;
+    document.getElementById('flash-card-inner').classList.add('flipped');
+    document.getElementById('flash-actions').classList.remove('hidden');
+    document.getElementById('flash-hint').classList.add('hidden');
+  }
+
+  function flashScore(knew) {
+    if(knew) flKnew++; else flMissed++;
+    flashIdx++;
+    showFlashCard();
+  }
+
+  function updateFlashScores() {
+    document.getElementById('fl-knew').textContent = flKnew;
+    document.getElementById('fl-missed').textContent = flMissed;
+    document.getElementById('fl-left').textContent = Math.max(0, flashDeck.length - flashIdx);
+  }
+
+  renderDict();
+  </script>
+</body>
+</html>
