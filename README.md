@@ -1,0 +1,2 @@
+# cebuano-dict
+learn cebuano
